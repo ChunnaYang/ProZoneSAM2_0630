@@ -247,7 +247,7 @@ export default function MedicalSAMDemo() {
         <img
           src="/深圳河套学院.png"
           alt="深圳河套学院"
-          className="absolute top-4 right-4 w-28 md:w-36 h-auto z-20 opacity-95"
+          className="absolute top-6 right-8 w-56 md:w-72 lg:w-80 h-auto z-20 opacity-95"
         />
 
         {/* Header */}
