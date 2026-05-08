@@ -241,7 +241,13 @@ export default function MedicalSAMDemo() {
   const displayBoxes = [...boxes, ...(currentBox && isDrawing ? [currentBox] : [])];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
+      {/* Shenzhen Hetao College Logo - top-right corner */}
+      <img
+        src="/深圳河套学院.png"
+        alt="深圳河套学院"
+        className="absolute top-4 right-4 w-24 h-auto z-10 pointer-events-none"
+      />
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8 flex items-center justify-center gap-4">
