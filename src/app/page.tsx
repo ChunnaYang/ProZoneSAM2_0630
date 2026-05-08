@@ -242,7 +242,7 @@ export default function MedicalSAMDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto relative overflow-hidden">
+      <div className="w-full px-4 md:px-6 xl:px-10 relative">
         {/* Shenzhen Hetao College Logo - absolute top-right */}
         <img
           src="/深圳河套学院.png"
@@ -270,9 +270,9 @@ export default function MedicalSAMDemo() {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-4">
+        <div className="flex gap-5 items-start">
           {/* Left Panel - Controls */}
-          <div className="space-y-4">
+          <div className="w-[320px] shrink-0 space-y-4">
             {/* Upload Section */}
             <Card className="p-5 bg-gradient-to-br from-white to-blue-50/50 dark:from-slate-900 dark:to-blue-950/20 border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-3">
@@ -476,7 +476,7 @@ export default function MedicalSAMDemo() {
           </div>
 
           {/* Right Panel - Canvas */}
-          <div className="lg:col-span-3">
+          <div className="flex-1 min-w-0">
             <Card className="p-4 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
               {!image ? (
                 <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50" style={{ minHeight: '400px' }}>
@@ -504,9 +504,7 @@ export default function MedicalSAMDemo() {
                     className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md cursor-crosshair"
                     style={{
                       width: '100%',
-                      paddingBottom: imageDimensions
-                        ? `${(imageDimensions.height / imageDimensions.width) * 100}%`
-                        : '75%',
+                      height: '78vh',
                     }}
                   >
                     {/* Original Image */}
