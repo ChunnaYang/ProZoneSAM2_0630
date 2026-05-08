@@ -242,12 +242,12 @@ export default function MedicalSAMDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto relative">
+      <div className="max-w-7xl mx-auto relative overflow-hidden">
         {/* Shenzhen Hetao College Logo - absolute top-right */}
         <img
           src="/深圳河套学院.png"
           alt="深圳河套学院"
-          className="absolute top-4 right-4 w-[672px] h-auto z-10 pointer-events-none"
+          className="absolute top-0 right-0 w-[672px] h-auto z-10 pointer-events-none"
         />
 
         {/* Header */}
