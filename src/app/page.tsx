@@ -241,39 +241,51 @@ export default function MedicalSAMDemo() {
   const displayBoxes = [...boxes, ...(currentBox && isDrawing ? [currentBox] : [])];
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
-      {/* Shenzhen Hetao College Logo - top-right corner */}
-      <img
-        src="/深圳河套学院.png"
-        alt="深圳河套学院"
-        className="absolute top-4 right-4 w-24 h-auto z-10 pointer-events-none"
-      />
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-3 md:p-5">
+      <div className="w-full">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-center gap-4">
-          <img 
-            src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
-            alt="ProZoneSAM2 Logo"
-            className="h-16 w-auto"
-          />
-          <div className="text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              ProZoneSAM2
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Interactive Medical Image Segmentation with Box Prompt
-            </p>
-            <div className="mt-2 flex justify-center">
-              <div className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-0.5 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200">
-                ✅ ProZoneSAM2 Model Ready
-              </div>
+        <div className="mb-5 flex items-center justify-between gap-4">
+          {/* Left: ProZoneSAM2 branding + Hetao logo together */}
+          <div className="flex items-center gap-4">
+            <img 
+              src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
+              alt="ProZoneSAM2 Logo"
+              className="h-14 w-auto flex-shrink-0"
+            />
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+                ProZoneSAM2
+              </h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Interactive Medical Image Segmentation with Box Prompt
+              </p>
+            </div>
+            {/* Divider */}
+            <div className="hidden md:block h-12 w-px bg-slate-300 dark:bg-slate-600 mx-1" />
+            {/* Shenzhen Hetao College Logo - next to title */}
+            <img
+              src="/深圳河套学院.png"
+              alt="深圳河套学院"
+              className="hidden md:block w-36 h-auto flex-shrink-0"
+            />
+          </div>
+          {/* Right: status badge */}
+          <div className="flex items-center gap-3">
+            {/* Hetao logo on mobile (fallback) */}
+            <img
+              src="/深圳河套学院.png"
+              alt="深圳河套学院"
+              className="block md:hidden w-28 h-auto flex-shrink-0"
+            />
+            <div className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-1 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200 whitespace-nowrap">
+              ✅ ProZoneSAM2 Model Ready
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-4">
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
           {/* Left Panel - Controls */}
-          <div className="space-y-4 lg:col-span-1">
+          <div className="space-y-4">
             {/* Upload Section */}
             <Card className="p-5 bg-gradient-to-br from-white to-blue-50/50 dark:from-slate-900 dark:to-blue-950/20 border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-3">
@@ -477,7 +489,7 @@ export default function MedicalSAMDemo() {
           </div>
 
           {/* Right Panel - Canvas */}
-          <div className="lg:col-span-3">
+          <div className="min-w-0">
             <Card className="p-5 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
               {!image ? (
                 <div className="flex aspect-video items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50">
