@@ -241,18 +241,18 @@ export default function MedicalSAMDemo() {
   const displayBoxes = [...boxes, ...(currentBox && isDrawing ? [currentBox] : [])];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-3 md:p-5">
-      <div className="w-full relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto relative">
         {/* Shenzhen Hetao College Logo - absolute top-right */}
         <img
           src="/深圳河套学院.png"
           alt="深圳河套学院"
-          className="absolute top-0 right-0 w-48 h-auto z-10 flex-shrink-0"
+          className="absolute top-0 right-0 w-24 h-auto z-10 flex-shrink-0"
         />
 
         {/* Header */}
-        <div className="mb-4 flex flex-col items-center text-center pr-52">
-          <div className="flex items-center gap-3 mb-1">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="flex items-center gap-3 mb-2">
             <img
               src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
               alt="ProZoneSAM2 Logo"
@@ -265,12 +265,12 @@ export default function MedicalSAMDemo() {
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Interactive Medical Image Segmentation with Box Prompt
           </p>
-          <div className="mt-1.5 inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-1 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200">
+          <div className="mt-2 inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-1 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200">
             ✅ ProZoneSAM2 Model Ready
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
+        <div className="grid gap-4 lg:grid-cols-4">
           {/* Left Panel - Controls */}
           <div className="space-y-4">
             {/* Upload Section */}
@@ -476,10 +476,10 @@ export default function MedicalSAMDemo() {
           </div>
 
           {/* Right Panel - Canvas */}
-          <div className="min-w-0">
+          <div className="lg:col-span-3">
             <Card className="p-4 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
               {!image ? (
-                <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50" style={{ aspectRatio: '16/9', maxHeight: '55vh' }}>
+                <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50" style={{ minHeight: '400px' }}>
                   <div className="text-center px-4">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-4">
                       <Upload className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -501,14 +501,19 @@ export default function MedicalSAMDemo() {
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseLeave}
-                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md mx-auto"
-                    style={{ aspectRatio: `${imageDimensions?.width}/${imageDimensions?.height}`, maxHeight: '52vh', width: '100%' }}
+                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md cursor-crosshair"
+                    style={{
+                      width: '100%',
+                      paddingBottom: imageDimensions
+                        ? `${(imageDimensions.height / imageDimensions.width) * 100}%`
+                        : '75%',
+                    }}
                   >
                     {/* Original Image */}
                     <img
                       src={image}
                       alt="上传的图像"
-                      className="h-full w-full object-contain select-none"
+                      className="absolute inset-0 h-full w-full object-contain select-none"
                       draggable={false}
                     />
 
