@@ -242,48 +242,35 @@ export default function MedicalSAMDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-3 md:p-5">
-      <div className="w-full">
+      <div className="w-full relative">
+        {/* Shenzhen Hetao College Logo - absolute top-right */}
+        <img
+          src="/深圳河套学院.png"
+          alt="深圳河套学院"
+          className="absolute top-0 right-0 w-48 h-auto z-10 flex-shrink-0"
+        />
+
         {/* Header */}
-        <div className="mb-5 flex items-center justify-between gap-4">
-          {/* Left: ProZoneSAM2 branding + Hetao logo together */}
-          <div className="flex items-center gap-4">
-            <img 
+        <div className="mb-4 flex flex-col items-center text-center pr-52">
+          <div className="flex items-center gap-3 mb-1">
+            <img
               src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
               alt="ProZoneSAM2 Logo"
-              className="h-14 w-auto flex-shrink-0"
+              className="h-12 w-auto flex-shrink-0"
             />
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
-                ProZoneSAM2
-              </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Interactive Medical Image Segmentation with Box Prompt
-              </p>
-            </div>
-            {/* Divider */}
-            <div className="hidden md:block h-12 w-px bg-slate-300 dark:bg-slate-600 mx-1" />
-            {/* Shenzhen Hetao College Logo - next to title */}
-            <img
-              src="/深圳河套学院.png"
-              alt="深圳河套学院"
-              className="hidden md:block w-36 h-auto flex-shrink-0"
-            />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+              ProZoneSAM2
+            </h1>
           </div>
-          {/* Right: status badge */}
-          <div className="flex items-center gap-3">
-            {/* Hetao logo on mobile (fallback) */}
-            <img
-              src="/深圳河套学院.png"
-              alt="深圳河套学院"
-              className="block md:hidden w-28 h-auto flex-shrink-0"
-            />
-            <div className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-1 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200 whitespace-nowrap">
-              ✅ ProZoneSAM2 Model Ready
-            </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Interactive Medical Image Segmentation with Box Prompt
+          </p>
+          <div className="mt-1.5 inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-3 py-1 text-xs text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200">
+            ✅ ProZoneSAM2 Model Ready
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
           {/* Left Panel - Controls */}
           <div className="space-y-4">
             {/* Upload Section */}
@@ -490,9 +477,9 @@ export default function MedicalSAMDemo() {
 
           {/* Right Panel - Canvas */}
           <div className="min-w-0">
-            <Card className="p-5 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
+            <Card className="p-4 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
               {!image ? (
-                <div className="flex aspect-video items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50">
+                <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50" style={{ aspectRatio: '16/9', maxHeight: '55vh' }}>
                   <div className="text-center px-4">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-4">
                       <Upload className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -514,8 +501,8 @@ export default function MedicalSAMDemo() {
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseLeave}
-                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md"
-                    style={{ aspectRatio: `${imageDimensions?.width}/${imageDimensions?.height}` }}
+                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md mx-auto"
+                    style={{ aspectRatio: `${imageDimensions?.width}/${imageDimensions?.height}`, maxHeight: '52vh', width: '100%' }}
                   >
                     {/* Original Image */}
                     <img
