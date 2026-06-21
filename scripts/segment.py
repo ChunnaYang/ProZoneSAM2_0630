@@ -157,9 +157,13 @@ def segment_image(
         return f"data:image/png;base64,{mask_base64}", True
 
     except Exception as e:
-        print(f"Error during segmentation: {e}", file=sys.stderr)
-        # Fallback to mock mode on error
-        return create_mock_mask(image, box), True
+        import traceback
+        print(f"[ERROR] Exception in segment_image(): {type(e).__name__}: {e}", file=sys.stderr)
+        print("[ERROR] Full traceback:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        # Re-raise so the caller (main) can log it as a JSON error response
+        # instead of silently falling back to mock masks
+        raise
 
 
 def create_mock_mask(image_data: bytes, box: Dict[str, int]) -> str:
@@ -272,8 +276,12 @@ def main():
             sys.exit(1)
 
     except Exception as e:
-        result = {"success": False, "error": str(e)}
-        print(json.dumps(result), file=sys.stderr)
+        import traceback
+        print(f"[ERROR] Unhandled exception in main(): {type(e).__name__}: {e}", file=sys.stderr)
+        print("[ERROR] Full traceback:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        result = {"success": False, "error": f"{type(e).__name__}: {e}"}
+        print(json.dumps(result))
         sys.exit(1)
 
 

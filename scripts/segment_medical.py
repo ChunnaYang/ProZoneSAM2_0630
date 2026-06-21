@@ -514,11 +514,13 @@ def segment_image(
             return create_mock_masks(image, boxes), True
 
     except Exception as e:
-        print(f"Error during medical segmentation: {e}", file=sys.stderr)
         import traceback
+        print(f"[ERROR] Exception in segment_image(): {type(e).__name__}: {e}", file=sys.stderr)
+        print("[ERROR] Full traceback:", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
-        # Fallback to mock mode on error
-        return create_mock_masks(image, boxes), True
+        # Re-raise so the caller (main) can log it as a JSON error response
+        # instead of silently falling back to mock masks
+        raise
 
 
 def create_colored_mask(mask: np.ndarray, color: tuple = (255, 0, 0), alpha: int = 150) -> Image.Image:
@@ -759,7 +761,11 @@ def main():
             sys.exit(1)
 
     except Exception as e:
-        result = {"success": False, "error": str(e)}
+        import traceback
+        print(f"[ERROR] Unhandled exception in main(): {type(e).__name__}: {e}", file=sys.stderr)
+        print("[ERROR] Full traceback:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        result = {"success": False, "error": f"{type(e).__name__}: {e}"}
         print(json.dumps(result))
         sys.exit(1)
 
