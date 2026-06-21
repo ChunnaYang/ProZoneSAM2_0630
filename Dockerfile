@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install PyTorch (CPU version) in virtual environment
-RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Install PyTorch (CUDA 11.8) in virtual environment - falls back to CPU automatically
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
 # Install Python dependencies for SAM2 in virtual environment
 RUN pip install numpy scipy opencv-python matplotlib pillow
