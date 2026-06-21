@@ -3,7 +3,32 @@
 import { useState, useRef, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, RefreshCw, Trash2, Plus } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Upload, RefreshCw, Trash2, ImageIcon } from 'lucide-react';
+
+const BUCKET_ENDPOINT = process.env.NEXT_PUBLIC_BUCKET_ENDPOINT ?? '';
+
+interface SampleImage {
+  id: string;
+  name: string;
+  filename: string;
+}
+
+const SAMPLE_IMAGES: SampleImage[] = [
+  { id: 'sample-1', name: 'Sample 1', filename: 'sample_1.png' },
+  { id: 'sample-2', name: 'Sample 2', filename: 'sample_2.png' },
+  { id: 'sample-3', name: 'Sample 3', filename: 'sample_3.png' },
+  { id: 'sample-4', name: 'Sample 4', filename: 'sample_4.png' },
+  { id: 'sample-5', name: 'Sample 5', filename: 'sample_5.png' },
+  { id: 'sample-6', name: 'Sample 6', filename: 'sample_6.png' },
+  { id: 'sample-7', name: 'Sample 7', filename: 'sample_7.png' },
+];
 
 interface Box {
   id: string;
@@ -35,6 +60,7 @@ export default function MedicalSAMDemo() {
   const [result, setResult] = useState<SegmentationResult | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const [useMedicalMode, setUseMedicalMode] = useState(true);
+  const [selectedSample, setSelectedSample] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -45,27 +71,38 @@ export default function MedicalSAMDemo() {
   // Generate unique ID for boxes
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Load sample image for quick testing
-  const loadSampleImage = () => {
+  // Load a sample image from the Railway Bucket by filename
+  const loadSampleImage = (filename: string) => {
+    const url = `${BUCKET_ENDPOINT}/prozone-sample-images/${filename}`;
     const sampleImage = new Image();
     sampleImage.onload = () => {
       setImageDimensions({ width: sampleImage.width, height: sampleImage.height });
-      setImage('/assets/test_image.png');
+      setImage(url);
       setBoxes([]); // Clear all boxes
       setResult(null);
       setStartPoint(null);
       setCurrentBox(null);
     };
     sampleImage.onerror = () => {
-      console.error('Failed to load sample image');
-      alert('Failed to load sample image');
+      console.error('Failed to load sample image:', url);
+      alert('Failed to load sample image. Please check the bucket endpoint configuration.');
     };
-    sampleImage.src = '/assets/test_image.png';
+    sampleImage.src = url;
+  };
+
+  // Handle sample selection from the dropdown
+  const handleSampleSelect = (sampleId: string) => {
+    setSelectedSample(sampleId);
+    const sample = SAMPLE_IMAGES.find((s) => s.id === sampleId);
+    if (sample) {
+      loadSampleImage(sample.filename);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedSample(''); // Clear sample selection when uploading a file
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
@@ -232,6 +269,7 @@ export default function MedicalSAMDemo() {
     setImageDimensions(null);
     setStartPoint(null);
     setCurrentBox(null);
+    setSelectedSample('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -302,6 +340,36 @@ export default function MedicalSAMDemo() {
                     </span>
                   </Button>
                 </label>
+
+                {/* Sample Image Selector */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">或选择示例图像</p>
+                  <Select
+                    value={selectedSample}
+                    onValueChange={handleSampleSelect}
+                    disabled={!BUCKET_ENDPOINT}
+                  >
+                    <SelectTrigger className="w-full h-9 border-blue-300 dark:border-blue-700 text-sm">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-blue-500 shrink-0" />
+                        <SelectValue placeholder={BUCKET_ENDPOINT ? '选择示例图像...' : '未配置 Bucket'} />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SAMPLE_IMAGES.map((sample) => (
+                        <SelectItem key={sample.id} value={sample.id}>
+                          {sample.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!BUCKET_ENDPOINT && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      请配置 NEXT_PUBLIC_BUCKET_ENDPOINT 环境变量
+                    </p>
+                  )}
+                </div>
+
                 {image && (
                   <Button
                     variant="ghost"
@@ -314,6 +382,7 @@ export default function MedicalSAMDemo() {
                 )}
               </div>
             </Card>
+
 
             {/* Box Type Selection */}
             <Card className="p-5 bg-gradient-to-br from-white to-orange-50/50 dark:from-slate-900 dark:to-orange-950/20 border-orange-200 dark:border-orange-800">
