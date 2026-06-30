@@ -22,9 +22,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHON_PATH="/opt/venv/bin/python3"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPYCACHEPREFIX=/tmp/pycache
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Python dependencies
-# Keep torch/torchvision compatible. Install MONAI without dependencies to avoid upgrading torch unexpectedly.
+# Pin torch/torchvision to avoid MONAI upgrading torch and breaking compatibility.
 RUN pip install --no-cache-dir torch==2.5.1+cpu torchvision==0.20.1+cpu --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir numpy scipy opencv-python matplotlib pillow hydra-core==1.3.2 omegaconf==2.3.0 nibabel SimpleITK pydicom tqdm
 RUN pip install --no-cache-dir --no-deps monai
@@ -33,16 +34,15 @@ RUN pip install --no-cache-dir --no-deps monai
 RUN npm install -g pnpm
 WORKDIR /app
 
-# IMPORTANT: do not set NODE_ENV=production before pnpm install/build.
-# next.config.ts needs TypeScript, which is in devDependencies.
-ENV NODE_ENV=development
 COPY package.json pnpm-lock.yaml* ./
+# Install devDependencies too, because next.config.ts needs TypeScript during build.
+# Do NOT set NODE_ENV=development before next build.
 RUN pnpm install --prod=false --prefer-offline
 
 COPY . .
-RUN pnpm next build
+# Some platforms inject custom NODE_ENV values. Remove it for build so Next can set the correct production value.
+RUN env -u NODE_ENV pnpm next build
 
-# Runtime
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
@@ -52,6 +52,8 @@ RUN cat > /app/start.sh <<'START_EOF'
 set -e
 export PATH="/opt/venv/bin:$PATH"
 export PYTHON_PATH="/opt/venv/bin/python3"
+export NODE_ENV=production
+export NEXT_TELEMETRY_DISABLED=1
 export PYTHONDONTWRITEBYTECODE=1
 export PYTHONPYCACHEPREFIX=/tmp/pycache
 mkdir -p /tmp/pycache
