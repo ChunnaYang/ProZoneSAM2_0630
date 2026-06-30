@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, MouseEvent, TouchEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Upload, RefreshCw, Trash2, ImageIcon } from 'lucide-react';
@@ -41,19 +41,6 @@ export default function MedicalSAMDemo() {
   // Use ref to track drawing state synchronously
   const isDrawingRef = useRef(false);
   const currentBoxRef = useRef<Box | null>(null);
-
-  // Prevent accidental refresh while segmentation is running.
-  // This only protects the page state and does not change inference speed or parameters.
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!isLoading) return;
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isLoading]);
 
   // Generate unique ID for boxes
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -329,8 +316,6 @@ export default function MedicalSAMDemo() {
   };
 
   const handleSegment = async () => {
-    if (isLoading) return;
-
     if (!image || boxes.length === 0) {
       console.warn('No image or boxes provided');
       return;
@@ -390,12 +375,12 @@ export default function MedicalSAMDemo() {
       <div className="mx-auto max-w-[1840px]">
         {/* Header */}
         <header className="mb-5 rounded-3xl border border-white/80 bg-white/85 px-6 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-          <div className="grid gap-5 lg:grid-cols-[360px_minmax(420px,1fr)_360px] lg:items-center">
+          <div className="grid gap-5 lg:grid-cols-[360px_minmax(520px,1fr)_420px] lg:items-center">
             <div className="flex items-center justify-center lg:justify-start">
               <img
                 src="/山东大学logo.png"
                 alt="山东大学"
-                className="h-24 w-auto object-contain md:h-28 lg:h-32"
+                className="h-16 w-auto object-contain md:h-20 lg:h-24"
               />
             </div>
 
@@ -424,13 +409,13 @@ export default function MedicalSAMDemo() {
               <img
                 src="/深圳河套学院.png"
                 alt="深圳河套学院"
-                className="h-24 w-auto object-contain md:h-28 lg:h-32"
+                className="h-32 w-auto object-contain md:h-36 lg:h-40"
               />
             </div>
           </div>
         </header>
 
-        <main className="grid gap-5 xl:grid-cols-[350px_minmax(640px,1fr)_350px] 2xl:grid-cols-[390px_minmax(760px,1fr)_390px]">
+        <main className="grid gap-6 xl:grid-cols-[380px_minmax(720px,1fr)_400px] 2xl:grid-cols-[420px_minmax(840px,1fr)_440px]">
           {/* Left Panel */}
           <aside className="space-y-4">
             <Card className="border-blue-100 bg-white/90 p-5 shadow-sm dark:border-blue-900/60 dark:bg-slate-950/80">
@@ -598,55 +583,6 @@ export default function MedicalSAMDemo() {
               </div>
             </Card>
 
-            {/* Boxes List */}
-            {boxes.length > 0 && (
-              <Card className="p-5 bg-white/90 shadow-sm dark:bg-slate-950/80">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-base font-bold">标注框 ({boxes.length})</h2>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearAllBoxes}
-                    disabled={isLoading}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    清除全部
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {boxes.filter(box => box != null).map((box) => (
-                    <div
-                      key={box.id}
-                      className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                      style={{
-                        borderColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(249, 115, 22, 0.3)',
-                        backgroundColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(249, 115, 22, 0.05)',
-                      }}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className={`font-bold ${box.type === 'WG' ? 'text-blue-600' : 'text-orange-600'}`}>
-                          {box.type}
-                        </span>
-                        <span className="text-slate-600 dark:text-slate-400">
-                          {box.width}×{box.height}
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteBox(box.id)}
-                        disabled={isLoading}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
           </aside>
 
           {/* Center Panel - Canvas */}
@@ -668,11 +604,7 @@ export default function MedicalSAMDemo() {
                   )}
                   <Button
                     type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      handleSegment();
-                    }}
+                    onClick={handleSegment}
                     disabled={!image || boxes.length === 0 || isLoading}
                     className="min-w-[160px] rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold shadow-md hover:from-blue-700 hover:to-purple-700"
                   >
@@ -863,6 +795,55 @@ export default function MedicalSAMDemo() {
                 </li>
               </ol>
             </Card>
+            {/* Boxes List */}
+            {boxes.length > 0 && (
+              <Card className="border-blue-100 bg-white/90 p-5 shadow-sm dark:border-blue-900/60 dark:bg-slate-950/80">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">标注框坐标 ({boxes.length})</h2>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllBoxes}
+                    disabled={isLoading}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    清除全部
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {boxes.filter(box => box != null).map((box) => (
+                    <div
+                      key={box.id}
+                      className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                      style={{
+                        borderColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(249, 115, 22, 0.3)',
+                        backgroundColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(249, 115, 22, 0.05)',
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className={`font-bold ${box.type === 'WG' ? 'text-blue-600' : 'text-orange-600'}`}>
+                          {box.type}
+                        </span>
+                        <span className="text-slate-600 dark:text-slate-400">
+                          x:{box.x}, y:{box.y}, {box.width}×{box.height}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteBox(box.id)}
+                        disabled={isLoading}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             <Card className="border-indigo-100 bg-white/90 p-5 shadow-sm dark:border-indigo-900/60 dark:bg-slate-950/80">
               <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">结果说明</h2>
