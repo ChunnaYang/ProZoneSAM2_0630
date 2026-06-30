@@ -847,7 +847,7 @@ export default function MedicalSAMDemo() {
                   <span className="font-black text-orange-600">CG</span>
                 </div>
                 <p>
-                  因此建议同时输入 WG 和 CG 两类提示框，便于获得更完整的外周带分割显示。
+                  建议同时输入 WG 和 CG 两类提示框，便于获得更完整的外周带分割显示。
                 </p>
               </div>
             </Card>
