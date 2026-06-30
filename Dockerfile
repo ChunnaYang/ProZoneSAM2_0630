@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Install Python and system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-venv \
@@ -16,38 +16,38 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create Python virtual environment
+# Python virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHON_PATH="/opt/venv/bin/python3"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPYCACHEPREFIX=/tmp/pycache
-ENV NODE_ENV=production
 
-# Install PyTorch CPU and Python dependencies
-RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-RUN pip install numpy scipy opencv-python matplotlib pillow
-RUN pip install hydra-core==1.3.2 omegaconf==2.3.0
-RUN pip install monai nibabel SimpleITK pydicom tqdm
+# Python dependencies
+# Keep torch/torchvision compatible. Install MONAI without dependencies to avoid upgrading torch unexpectedly.
+RUN pip install --no-cache-dir torch==2.5.1+cpu torchvision==0.20.1+cpu --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir numpy scipy opencv-python matplotlib pillow hydra-core==1.3.2 omegaconf==2.3.0 nibabel SimpleITK pydicom tqdm
+RUN pip install --no-cache-dir --no-deps monai
 
-# Install pnpm
+# Node dependencies
 RUN npm install -g pnpm
-
 WORKDIR /app
 
-# Copy dependency files and install Node dependencies
+# IMPORTANT: do not set NODE_ENV=production before pnpm install/build.
+# next.config.ts needs TypeScript, which is in devDependencies.
+ENV NODE_ENV=development
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prefer-offline
+RUN pnpm install --prod=false --prefer-offline
 
-# Copy source code
 COPY . .
-
-# Build Next.js once. Railway must not run next dev, otherwise Python __pycache__
-# writes can trigger Turbopack/HMR reloads during segmentation.
 RUN pnpm next build
 
-# Runtime startup script: download models if missing, then run production server.
-RUN cat > /app/start.sh <<'EOF'
+# Runtime
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
+
+RUN cat > /app/start.sh <<'START_EOF'
 #!/bin/bash
 set -e
 export PATH="/opt/venv/bin:$PATH"
@@ -71,9 +71,7 @@ fi
 echo "Starting Next.js production server with Python venv..."
 echo "Python path: $PYTHON_PATH"
 exec node_modules/.bin/next start -p ${PORT:-3000}
-EOF
+START_EOF
 RUN chmod +x /app/start.sh
 
-ENV PORT=3000
-EXPOSE 3000
 CMD ["/app/start.sh"]
