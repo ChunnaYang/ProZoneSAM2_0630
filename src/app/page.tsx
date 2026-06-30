@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, MouseEvent, TouchEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, RefreshCw, Trash2, ImageIcon } from 'lucide-react';
+import { Upload, RefreshCw, Trash2, Plus, ImageIcon } from 'lucide-react';
 
 interface Box {
   id: string;
@@ -38,26 +38,9 @@ export default function MedicalSAMDemo() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Use refs to track drawing and segmentation state synchronously.
-  // The segmentation ref prevents duplicate requests and avoids refresh-like UI resets
-  // while the Railway backend is still processing the current image.
+  // Use ref to track drawing state synchronously
   const isDrawingRef = useRef(false);
   const currentBoxRef = useRef<Box | null>(null);
-  const isSegmentingRef = useRef(false);
-
-  // Prevent accidental refresh/navigation while segmentation is running.
-  // This only protects the frontend state and does not change the image, boxes, API payload,
-  // model inference, or segmentation performance.
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!isLoading) return;
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isLoading]);
 
   // Generate unique ID for boxes
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -322,33 +305,22 @@ export default function MedicalSAMDemo() {
 
   // Function to delete a specific box
   const deleteBox = (boxId: string) => {
-    if (isLoading) return;
     setBoxes(prev => prev.filter(box => box.id !== boxId));
     setResult(null); // Clear results when boxes change
   };
 
   // Function to clear all boxes
   const clearAllBoxes = () => {
-    if (isLoading) return;
     setBoxes([]);
     setResult(null);
   };
 
-  const handleSegment = async (event?: MouseEvent<HTMLButtonElement>) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-
-    if (isSegmentingRef.current || isLoading) {
-      console.warn('Segmentation is already running');
-      return;
-    }
-
+  const handleSegment = async () => {
     if (!image || boxes.length === 0) {
       console.warn('No image or boxes provided');
       return;
     }
 
-    isSegmentingRef.current = true;
     setIsLoading(true);
     setResult(null);
 
@@ -358,7 +330,6 @@ export default function MedicalSAMDemo() {
         headers: {
           'Content-Type': 'application/json',
         },
-        cache: 'no-store',
         body: JSON.stringify({
           image,
           boxes,  // Send all boxes
@@ -380,13 +351,11 @@ export default function MedicalSAMDemo() {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
       });
     } finally {
-      isSegmentingRef.current = false;
       setIsLoading(false);
     }
   };
 
   const resetAll = () => {
-    if (isLoading) return;
     setImage(null);
     setBoxes([]);
     setResult(null);
@@ -402,16 +371,16 @@ export default function MedicalSAMDemo() {
   const displayBoxes = [...boxes, ...(currentBox && isDrawing ? [currentBox] : [])];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eef2ff_45%,#f8fafc_100%)] dark:from-slate-950 dark:to-slate-900 px-4 py-5 md:px-6 md:py-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_32%),linear-gradient(135deg,#f8fafc_0%,#eef2ff_44%,#f8fafc_100%)] p-4 dark:from-slate-950 dark:to-slate-900 md:p-6">
       <div className="mx-auto max-w-[1760px]">
         {/* Header */}
-        <header className="relative mb-6 rounded-3xl border border-white/80 bg-white/75 px-6 py-5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/70">
+        <header className="mb-5 rounded-3xl border border-white/80 bg-white/80 px-5 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/70">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               <img
                 src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
                 alt="ProZoneSAM2 Logo"
-                className="h-14 w-auto flex-shrink-0 rounded-xl shadow-sm"
+                className="h-12 w-auto flex-shrink-0 rounded-xl shadow-sm"
               />
               <div>
                 <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-violet-600 to-purple-600 bg-clip-text text-transparent md:text-4xl">
@@ -437,8 +406,8 @@ export default function MedicalSAMDemo() {
         </header>
 
         {/* Main Workbench */}
-        <main className="grid gap-5 xl:grid-cols-[minmax(300px,0.95fr)_minmax(560px,1.35fr)_minmax(300px,0.95fr)] 2xl:grid-cols-[380px_minmax(680px,1fr)_380px]">
-          {/* Left Panel */}
+        <div className="grid gap-5 xl:grid-cols-[330px_minmax(620px,1fr)_330px] 2xl:grid-cols-[380px_minmax(720px,1fr)_380px]">
+          {/* Left Panel - Introduction and Controls */}
           <aside className="space-y-4">
             <Card className="overflow-hidden border-blue-100 bg-white/90 p-5 shadow-md dark:border-blue-900/60 dark:bg-slate-950/80">
               <div className="mb-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
@@ -480,25 +449,24 @@ export default function MedicalSAMDemo() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  disabled={isLoading}
                   className="hidden"
                   id="image-upload"
                 />
+                <label htmlFor="image-upload">
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 border-blue-300 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/30 transition-all"
+                    asChild
+                  >
+                    <span className="flex items-center justify-center gap-2 text-sm font-semibold">
+                      <Upload className="h-4 w-4" />
+                      上传图像
+                    </span>
+                  </Button>
+                </label>
                 <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="w-full h-10 border-blue-300 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/30 transition-all"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  <span className="text-sm font-semibold">上传图像</span>
-                </Button>
-                <Button
-                  type="button"
                   variant="outline"
                   onClick={loadSampleImage}
-                  disabled={isLoading}
                   className="w-full h-10 border-purple-300 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950/30 transition-all"
                 >
                   <ImageIcon className="mr-2 h-4 w-4 text-purple-600" />
@@ -506,10 +474,8 @@ export default function MedicalSAMDemo() {
                 </Button>
                 {image && (
                   <Button
-                    type="button"
                     variant="ghost"
                     onClick={resetAll}
-                    disabled={isLoading}
                     className="w-full h-10 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -539,12 +505,11 @@ export default function MedicalSAMDemo() {
                     name="boxType"
                     checked={selectedBoxType === 'WG'}
                     onChange={() => setSelectedBoxType('WG')}
-                    disabled={isLoading}
                     className="h-4 w-4 text-blue-600"
                   />
                   <span className="flex-1">
                     <span className="font-bold text-blue-600">WG</span>
-                    <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">全腺体 / Whole Gland</span>
+                    <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">全腺体</span>
                   </span>
                 </label>
                 <label className="flex items-center space-x-3 p-3 rounded-xl border-2 cursor-pointer transition-all hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 dark:border-orange-900"
@@ -558,16 +523,15 @@ export default function MedicalSAMDemo() {
                     name="boxType"
                     checked={selectedBoxType === 'CG'}
                     onChange={() => setSelectedBoxType('CG')}
-                    disabled={isLoading}
                     className="h-4 w-4 text-orange-600"
                   />
                   <span className="flex-1">
                     <span className="font-bold text-orange-600">CG</span>
-                    <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">中央腺体 / Central Gland</span>
+                    <span className="ml-2 text-sm text-slate-600 dark:text-slate-400">中央腺体</span>
                   </span>
                 </label>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-500 leading-relaxed">
-                  💡 依次绘制 WG 和 CG 标注框后运行分割，可得到 CG 与 PZ 结果。
+                  💡 同时绘制 WG 和 CG 标注框以获取 PZ 分割结果（结果仅显示 CG 和 PZ）
                 </p>
               </div>
             </Card>
@@ -583,7 +547,6 @@ export default function MedicalSAMDemo() {
                     name="mode"
                     checked={!useMedicalMode}
                     onChange={() => setUseMedicalMode(false)}
-                    disabled={isLoading}
                     className="h-4 w-4"
                   />
                   <label htmlFor="basic-mode" className="text-sm">
@@ -598,7 +561,6 @@ export default function MedicalSAMDemo() {
                     name="mode"
                     checked={useMedicalMode}
                     onChange={() => setUseMedicalMode(true)}
-                    disabled={isLoading}
                     className="h-4 w-4"
                   />
                   <label htmlFor="medical-mode" className="text-sm">
@@ -608,56 +570,6 @@ export default function MedicalSAMDemo() {
                 </div>
               </div>
             </Card>
-
-            {/* Boxes List */}
-            {boxes.length > 0 && (
-              <Card className="p-5 bg-white/90 shadow-sm dark:bg-slate-950/80">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-base font-bold">标注框 ({boxes.length})</h2>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearAllBoxes}
-                    disabled={isLoading}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    清除全部
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {boxes.filter(box => box != null).map((box) => (
-                    <div
-                      key={box.id}
-                      className="flex items-center justify-between rounded-xl border p-3 text-sm"
-                      style={{
-                        borderColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(249, 115, 22, 0.3)',
-                        backgroundColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(249, 115, 22, 0.05)',
-                      }}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className={`font-bold ${box.type === 'WG' ? 'text-blue-600' : 'text-orange-600'}`}>
-                          {box.type}
-                        </span>
-                        <span className="text-slate-600 dark:text-slate-400">
-                          {box.width}×{box.height}
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteBox(box.id)}
-                        disabled={isLoading}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
           </aside>
 
           {/* Center Panel - Canvas */}
@@ -799,7 +711,6 @@ export default function MedicalSAMDemo() {
                         : '点击并拖拽图像以绘制标注框'}
                     </p>
                     <Button
-                      type="button"
                       onClick={handleSegment}
                       disabled={boxes.length === 0 || isLoading}
                       className="min-w-[170px] rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold shadow-md hover:from-blue-700 hover:to-purple-700"
@@ -840,7 +751,7 @@ export default function MedicalSAMDemo() {
             </Card>
           </section>
 
-          {/* Right Panel */}
+          {/* Right Panel - Guide */}
           <aside className="space-y-4">
             <Card className="border-purple-100 bg-white/90 p-5 shadow-md dark:border-purple-900/60 dark:bg-slate-950/80">
               <div className="mb-3 inline-flex rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700 dark:bg-purple-950/40 dark:text-purple-200">
@@ -852,7 +763,7 @@ export default function MedicalSAMDemo() {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">1</span>
                   <div>
                     <div className="font-bold text-slate-800 dark:text-slate-100">上传图像</div>
-                    <div className="mt-0.5 leading-6">导入前列腺 MRI 或超声二维图像。</div>
+                    <div className="mt-0.5 leading-6">导入前列腺 MRI、超声或其他二维医学图像。</div>
                   </div>
                 </div>
                 <div className="flex gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-900/60">
@@ -871,6 +782,52 @@ export default function MedicalSAMDemo() {
                 </div>
               </div>
             </Card>
+
+            {/* Boxes List */}
+            {boxes.length > 0 && (
+              <Card className="p-5 bg-white/90 shadow-sm dark:bg-slate-950/80">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-base font-bold">标注框 ({boxes.length})</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllBoxes}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    清除全部
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {boxes.filter(box => box != null).map((box) => (
+                    <div
+                      key={box.id}
+                      className="flex items-center justify-between rounded-xl border p-3 text-sm"
+                      style={{
+                        borderColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(249, 115, 22, 0.3)',
+                        backgroundColor: box.type === 'WG' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(249, 115, 22, 0.05)',
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className={`font-bold ${box.type === 'WG' ? 'text-blue-600' : 'text-orange-600'}`}>
+                          {box.type}
+                        </span>
+                        <span className="text-slate-600 dark:text-slate-400">
+                          {box.width}×{box.height}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteBox(box.id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             <Card className="border-indigo-100 bg-white/90 p-5 shadow-md dark:border-indigo-900/60 dark:bg-slate-950/80">
               <div className="mb-3 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200">
@@ -911,12 +868,12 @@ export default function MedicalSAMDemo() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 inline-block h-3 w-3 rounded-full bg-slate-400"></span>
-                  <span>当前页面仅调整布局与说明文字，不改变分割接口、推理参数和后处理流程。</span>
+                  <span>本页面仅调整布局与说明文字，不改变分割接口、推理参数和后处理流程。</span>
                 </li>
               </ul>
             </Card>
           </aside>
-        </main>
+        </div>
       </div>
     </div>
   );
