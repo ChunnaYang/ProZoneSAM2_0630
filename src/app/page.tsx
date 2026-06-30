@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, useEffect, MouseEvent, TouchEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Upload, RefreshCw, Trash2, ImageIcon } from 'lucide-react';
@@ -38,9 +38,26 @@ export default function MedicalSAMDemo() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Use ref to track drawing state synchronously
+  // Use refs to track drawing and segmentation state synchronously.
+  // The segmentation ref prevents duplicate requests and avoids refresh-like UI resets
+  // while the Railway backend is still processing the current image.
   const isDrawingRef = useRef(false);
   const currentBoxRef = useRef<Box | null>(null);
+  const isSegmentingRef = useRef(false);
+
+  // Prevent accidental refresh/navigation while segmentation is running.
+  // This only protects the frontend state and does not change the image, boxes, API payload,
+  // model inference, or segmentation performance.
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isLoading) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isLoading]);
 
   // Generate unique ID for boxes
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -305,22 +322,33 @@ export default function MedicalSAMDemo() {
 
   // Function to delete a specific box
   const deleteBox = (boxId: string) => {
+    if (isLoading) return;
     setBoxes(prev => prev.filter(box => box.id !== boxId));
     setResult(null); // Clear results when boxes change
   };
 
   // Function to clear all boxes
   const clearAllBoxes = () => {
+    if (isLoading) return;
     setBoxes([]);
     setResult(null);
   };
 
-  const handleSegment = async () => {
+  const handleSegment = async (event?: MouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    if (isSegmentingRef.current || isLoading) {
+      console.warn('Segmentation is already running');
+      return;
+    }
+
     if (!image || boxes.length === 0) {
       console.warn('No image or boxes provided');
       return;
     }
 
+    isSegmentingRef.current = true;
     setIsLoading(true);
     setResult(null);
 
@@ -330,6 +358,7 @@ export default function MedicalSAMDemo() {
         headers: {
           'Content-Type': 'application/json',
         },
+        cache: 'no-store',
         body: JSON.stringify({
           image,
           boxes,  // Send all boxes
@@ -351,11 +380,13 @@ export default function MedicalSAMDemo() {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
       });
     } finally {
+      isSegmentingRef.current = false;
       setIsLoading(false);
     }
   };
 
   const resetAll = () => {
+    if (isLoading) return;
     setImage(null);
     setBoxes([]);
     setResult(null);
@@ -449,24 +480,25 @@ export default function MedicalSAMDemo() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
+                  disabled={isLoading}
                   className="hidden"
                   id="image-upload"
                 />
-                <label htmlFor="image-upload">
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 border-blue-300 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/30 transition-all"
-                    asChild
-                  >
-                    <span className="flex items-center justify-center gap-2 text-sm font-semibold">
-                      <Upload className="h-4 w-4" />
-                      上传图像
-                    </span>
-                  </Button>
-                </label>
                 <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="w-full h-10 border-blue-300 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/30 transition-all"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span className="text-sm font-semibold">上传图像</span>
+                </Button>
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={loadSampleImage}
+                  disabled={isLoading}
                   className="w-full h-10 border-purple-300 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950/30 transition-all"
                 >
                   <ImageIcon className="mr-2 h-4 w-4 text-purple-600" />
@@ -474,8 +506,10 @@ export default function MedicalSAMDemo() {
                 </Button>
                 {image && (
                   <Button
+                    type="button"
                     variant="ghost"
                     onClick={resetAll}
+                    disabled={isLoading}
                     className="w-full h-10 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -505,6 +539,7 @@ export default function MedicalSAMDemo() {
                     name="boxType"
                     checked={selectedBoxType === 'WG'}
                     onChange={() => setSelectedBoxType('WG')}
+                    disabled={isLoading}
                     className="h-4 w-4 text-blue-600"
                   />
                   <span className="flex-1">
@@ -523,6 +558,7 @@ export default function MedicalSAMDemo() {
                     name="boxType"
                     checked={selectedBoxType === 'CG'}
                     onChange={() => setSelectedBoxType('CG')}
+                    disabled={isLoading}
                     className="h-4 w-4 text-orange-600"
                   />
                   <span className="flex-1">
@@ -547,6 +583,7 @@ export default function MedicalSAMDemo() {
                     name="mode"
                     checked={!useMedicalMode}
                     onChange={() => setUseMedicalMode(false)}
+                    disabled={isLoading}
                     className="h-4 w-4"
                   />
                   <label htmlFor="basic-mode" className="text-sm">
@@ -561,6 +598,7 @@ export default function MedicalSAMDemo() {
                     name="mode"
                     checked={useMedicalMode}
                     onChange={() => setUseMedicalMode(true)}
+                    disabled={isLoading}
                     className="h-4 w-4"
                   />
                   <label htmlFor="medical-mode" className="text-sm">
@@ -577,9 +615,11 @@ export default function MedicalSAMDemo() {
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-base font-bold">标注框 ({boxes.length})</h2>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={clearAllBoxes}
+                    disabled={isLoading}
                     className="text-red-600 hover:text-red-700"
                   >
                     清除全部
@@ -604,9 +644,11 @@ export default function MedicalSAMDemo() {
                         </span>
                       </div>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteBox(box.id)}
+                        disabled={isLoading}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -757,6 +799,7 @@ export default function MedicalSAMDemo() {
                         : '点击并拖拽图像以绘制标注框'}
                     </p>
                     <Button
+                      type="button"
                       onClick={handleSegment}
                       disabled={boxes.length === 0 || isLoading}
                       className="min-w-[170px] rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold shadow-md hover:from-blue-700 hover:to-purple-700"
