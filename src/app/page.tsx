@@ -41,7 +41,6 @@ export default function MedicalSAMDemo() {
   // Use ref to track drawing state synchronously
   const isDrawingRef = useRef(false);
   const currentBoxRef = useRef<Box | null>(null);
-  const isSegmentingRef = useRef(false);
 
   // Generate unique ID for boxes
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -316,104 +315,32 @@ export default function MedicalSAMDemo() {
     setResult(null);
   };
 
-  const prepareSegmentationPayload = async () => {
-    if (!image || !imageDimensions) {
-      throw new Error('Image is not ready');
-    }
-
-    // The Python backend resizes every input to 1024 internally. Sending a larger
-    // image only increases upload/JSON parsing time and Railway memory pressure.
-    // Keep the original UI image unchanged, but send a 1024-max-side copy and
-    // scale the boxes accordingly. This does not change the model or postprocess.
-    const maxSegmentSide = 1024;
-    const maxSide = Math.max(imageDimensions.width, imageDimensions.height);
-
-    if (maxSide <= maxSegmentSide) {
-      return { requestImage: image, requestBoxes: boxes };
-    }
-
-    const scale = maxSegmentSide / maxSide;
-    const targetWidth = Math.max(1, Math.round(imageDimensions.width * scale));
-    const targetHeight = Math.max(1, Math.round(imageDimensions.height * scale));
-
-    const resizedImage = await new Promise<string>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          reject(new Error('Failed to create canvas context'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.onerror = () => reject(new Error('Failed to prepare image for segmentation'));
-      img.src = image;
-    });
-
-    const requestBoxes = boxes.map((box) => ({
-      ...box,
-      x: Math.round(box.x * scale),
-      y: Math.round(box.y * scale),
-      width: Math.max(1, Math.round(box.width * scale)),
-      height: Math.max(1, Math.round(box.height * scale)),
-    }));
-
-    return { requestImage: resizedImage, requestBoxes };
-  };
-
-  const handleSegment = async (event?: MouseEvent<HTMLButtonElement>) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-
-    if (isSegmentingRef.current || isLoading) {
-      console.warn('Segmentation is already running');
-      return;
-    }
-
+  const handleSegment = async () => {
     if (!image || boxes.length === 0) {
       console.warn('No image or boxes provided');
       return;
     }
 
-    isSegmentingRef.current = true;
     setIsLoading(true);
     setResult(null);
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, 240000);
-
     try {
-      const { requestImage, requestBoxes } = await prepareSegmentationPayload();
-
       const response = await fetch('/api/segment', {
         method: 'POST',
-        cache: 'no-store',
-        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image: requestImage,
-          boxes: requestBoxes,
+          image,
+          boxes,  // Send all boxes
           useMedical: useMedicalMode,
         }),
       });
 
-      const contentType = response.headers.get('content-type') || '';
-      const data = contentType.includes('application/json')
-        ? await response.json()
-        : { error: await response.text() };
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `Segmentation failed with status ${response.status}`);
+        throw new Error(data.error || 'Segmentation failed');
       }
 
       setResult(data);
@@ -421,16 +348,9 @@ export default function MedicalSAMDemo() {
       console.error('Error:', error);
       setResult({
         success: false,
-        error:
-          error instanceof DOMException && error.name === 'AbortError'
-            ? 'Segmentation request timed out. Please try again after the Railway service has warmed up.'
-            : error instanceof Error
-            ? error.message
-            : 'Unknown error occurred',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       });
     } finally {
-      window.clearTimeout(timeoutId);
-      isSegmentingRef.current = false;
       setIsLoading(false);
     }
   };
