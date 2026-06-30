@@ -562,32 +562,29 @@ def segment_image(image, boxes, model):
             masks_dict = {}
 
             if len(wg_boxes) > 0:
-                wg_mask = (wg_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
-                wg_mask_smoothed = smooth_mask(wg_mask, min_size=200, operation='both')
-                wg_mask_smoothed = refine_mask_boundary(wg_mask_smoothed, sigma=1.5)
+                # Threshold directly — skip expensive smooth_mask / refine_mask_boundary
+                wg_mask_final = (wg_prob_resized > 0.5).cpu().numpy().astype(np.uint8) * 255
                 # Resize mask back to original image dimensions
-                wg_mask_final = resize_mask_to_original(wg_mask_smoothed, orig_H, orig_W)
-                wg_mask_image = create_colored_mask(wg_mask_final, color=(255, 0, 0), alpha=150)
+                wg_mask_final = resize_mask_to_original(wg_mask_final, orig_H, orig_W)
+                wg_mask_image = Image.fromarray(wg_mask_final, mode='L')
                 wg_mask_base64 = image_to_base64(wg_mask_image)
                 masks_dict['WG'] = wg_mask_base64
 
             if len(cg_boxes) > 0:
-                cg_mask = (cg_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
-                cg_mask_smoothed = smooth_mask(cg_mask, min_size=100, operation='both')
-                cg_mask_smoothed = refine_mask_boundary(cg_mask_smoothed, sigma=1.0)
+                # Threshold directly — skip expensive smooth_mask / refine_mask_boundary
+                cg_mask_final = (cg_prob_resized > 0.5).cpu().numpy().astype(np.uint8) * 255
                 # Resize mask back to original image dimensions
-                cg_mask_final = resize_mask_to_original(cg_mask_smoothed, orig_H, orig_W)
-                cg_mask_image = create_colored_mask(cg_mask_final, color=(0, 255, 0), alpha=150)
+                cg_mask_final = resize_mask_to_original(cg_mask_final, orig_H, orig_W)
+                cg_mask_image = Image.fromarray(cg_mask_final, mode='L')
                 cg_mask_base64 = image_to_base64(cg_mask_image)
                 masks_dict['CG'] = cg_mask_base64
 
             if len(wg_boxes) > 0 and len(cg_boxes) > 0:
-                pz_mask = (pz_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
-                pz_mask_smoothed = smooth_mask(pz_mask, min_size=100, operation='both')
-                pz_mask_smoothed = refine_mask_boundary(pz_mask_smoothed, sigma=1.0)
+                # Threshold directly — skip expensive smooth_mask / refine_mask_boundary
+                pz_mask_final = (pz_prob_resized > 0.5).cpu().numpy().astype(np.uint8) * 255
                 # Resize mask back to original image dimensions
-                pz_mask_final = resize_mask_to_original(pz_mask_smoothed, orig_H, orig_W)
-                pz_mask_image = create_colored_mask(pz_mask_final, color=(0, 0, 255), alpha=150)
+                pz_mask_final = resize_mask_to_original(pz_mask_final, orig_H, orig_W)
+                pz_mask_image = Image.fromarray(pz_mask_final, mode='L')
                 pz_mask_base64 = image_to_base64(pz_mask_image)
                 masks_dict['PZ'] = pz_mask_base64
 
