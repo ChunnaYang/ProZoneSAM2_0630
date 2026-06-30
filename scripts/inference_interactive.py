@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-Interactive Inference Script for Medical SAM2
-
 This script allows users to:
 1. Load a 2D image (PNG/JPG) or 3D volume (nii.gz)
 2. Manually draw bounding boxes for WG and CG
