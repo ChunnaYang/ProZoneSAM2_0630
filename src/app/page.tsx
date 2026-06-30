@@ -390,27 +390,37 @@ export default function MedicalSAMDemo() {
       <div className="mx-auto max-w-[1580px]">
         {/* Header */}
         <header className="mb-5 rounded-3xl border border-white/80 bg-white/85 px-5 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+            <div className="flex justify-center lg:justify-start">
               <img
-                src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
-                alt="ProZoneSAM2 Logo"
-                className="h-14 w-auto flex-shrink-0 md:h-16"
+                src="/山东大学logo.png"
+                alt="山东大学"
+                className="h-20 w-auto object-contain md:h-24 lg:h-28"
               />
-              <div>
-                <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent md:text-4xl">
-                  ProZoneSAM2
-                </h1>
-                <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Interactive Prostate Zone Segmentation with Box Prompt
-                </p>
+            </div>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="flex items-center justify-center gap-3">
+                <img
+                  src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Flogo3.png&nonce=97f6f9fd-07eb-4aba-95b8-ba41d6aad315&project_id=7611091818876452915&sign=83ce3ce2b2d06a8f24d566d3e8375456040b2f238f2624d80c41f1226f09cb0b"
+                  alt="ProZoneSAM2 Logo"
+                  className="h-12 w-auto flex-shrink-0 rounded-xl md:h-14"
+                />
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent md:text-4xl">
+                    ProZoneSAM2
+                  </h1>
+                  <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Interactive Prostate Zone Segmentation with Box Prompt
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 inline-flex rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-1.5 text-xs font-semibold text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200">
+                ✅ ProZoneSAM2 Model Ready
               </div>
             </div>
 
-            <div className="flex items-center gap-4 lg:justify-end">
-              <div className="hidden rounded-full bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-1.5 text-xs font-semibold text-blue-800 dark:from-blue-950/50 dark:to-purple-950/50 dark:text-blue-200 sm:inline-flex">
-                ✅ ProZoneSAM2 Model Ready
-              </div>
+            <div className="flex justify-center lg:justify-end">
               <img
                 src="/深圳河套学院.png"
                 alt="深圳河套学院"
@@ -642,16 +652,33 @@ export default function MedicalSAMDemo() {
           {/* Center Panel - Canvas */}
           <section className="space-y-4">
             <Card className="p-4 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50 shadow-lg">
-              <div className="mb-3 flex flex-col gap-2 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">Segmentation Canvas</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">拖拽绘制 WG / CG 边界框后运行分割。</p>
+              <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-base text-slate-600 dark:text-slate-400">
+                  {boxes.length > 0
+                    ? `${boxes.length} 个标注框: ${boxes.map(b => b.type).join(', ')}`
+                    : isDrawing
+                    ? '正在绘制标注框...'
+                    : '点击并拖拽图像以绘制标注框'}
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {isLoading && (
+                    <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
+                      分割中，请勿刷新页面
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      handleSegment();
+                    }}
+                    disabled={boxes.length === 0 || isLoading}
+                    className="min-w-[150px] rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold shadow-md hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {isLoading ? '处理中...' : '开始分割'}
+                  </Button>
                 </div>
-                {isLoading && (
-                  <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
-                    分割中，请勿刷新页面
-                  </div>
-                )}
               </div>
 
               {!image ? (
@@ -776,29 +803,6 @@ export default function MedicalSAMDemo() {
                     )}
                   </div>
 
-                  {/* Controls */}
-                  <div className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-base text-slate-600 dark:text-slate-400">
-                      {boxes.length > 0
-                        ? `${boxes.length} 个标注框: ${boxes.map(b => b.type).join(', ')}`
-                        : isDrawing
-                        ? '正在绘制标注框...'
-                        : '点击并拖拽图像以绘制标注框'}
-                    </p>
-                    <Button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        handleSegment();
-                      }}
-                      disabled={boxes.length === 0 || isLoading}
-                      className="min-w-[160px] rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold shadow-md hover:from-blue-700 hover:to-purple-700"
-                    >
-                      {isLoading ? '处理中...' : '运行分割'}
-                    </Button>
-                  </div>
-
                   {/* Error Message */}
                   {result?.error && (
                     <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-base text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
@@ -846,7 +850,7 @@ export default function MedicalSAMDemo() {
                 </li>
                 <li className="flex gap-3">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-600 text-xs font-black text-white">3</span>
-                  <span>点击运行分割，等待结果叠加显示。</span>
+                  <span>点击开始分割，等待结果叠加显示。</span>
                 </li>
               </ol>
             </Card>
