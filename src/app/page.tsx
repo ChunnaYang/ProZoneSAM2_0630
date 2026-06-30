@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, MouseEvent } from 'react';
+import { useState, useRef, MouseEvent, TouchEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, RefreshCw, Trash2, Plus } from 'lucide-react';
+import { Upload, RefreshCw, Trash2, Plus, ImageIcon } from 'lucide-react';
 
 interface Box {
   id: string;
@@ -173,6 +173,89 @@ export default function MedicalSAMDemo() {
     currentBoxRef.current = null;
   };
 
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    if (!image || !imageDimensions) return;
+    e.preventDefault(); // Prevent scrolling while drawing
+
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scaleX = imageDimensions.width / rect.width;
+    const scaleY = imageDimensions.height / rect.height;
+
+    const x = Math.round((touch.clientX - rect.left) * scaleX);
+    const y = Math.round((touch.clientY - rect.top) * scaleY);
+
+    const newBox = { id: generateBoxId(), x, y, width: 0, height: 0, type: selectedBoxType };
+    console.log('[TouchStart] Start drawing at:', { x, y, type: selectedBoxType });
+
+    setStartPoint({ x, y });
+    setIsDrawing(true);
+    setCurrentBox(newBox);
+    isDrawingRef.current = true;
+    currentBoxRef.current = newBox;
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    if (!isDrawingRef.current || !startPoint || !imageDimensions) return;
+    e.preventDefault(); // Prevent scrolling while drawing
+
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scaleX = imageDimensions.width / rect.width;
+    const scaleY = imageDimensions.height / rect.height;
+
+    const currentX = Math.round((touch.clientX - rect.left) * scaleX);
+    const currentY = Math.round((touch.clientY - rect.top) * scaleY);
+
+    const width = currentX - startPoint.x;
+    const height = currentY - startPoint.y;
+
+    const updatedBox = {
+      x: width < 0 ? currentX : startPoint.x,
+      y: height < 0 ? currentY : startPoint.y,
+      width: Math.abs(width),
+      height: Math.abs(height),
+    };
+
+    setCurrentBox((prevBox) => {
+      if (prevBox) {
+        const newBox = { ...prevBox, ...updatedBox };
+        currentBoxRef.current = newBox;
+        return newBox;
+      }
+      return null;
+    });
+  };
+
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    console.log('[TouchEnd] isDrawingRef:', isDrawingRef.current, 'currentBoxRef:', currentBoxRef.current);
+
+    if (isDrawingRef.current && currentBoxRef.current && currentBoxRef.current.width > 0 && currentBoxRef.current.height > 0) {
+      console.log('[TouchEnd] Adding box:', currentBoxRef.current);
+      const boxToAdd = { ...currentBoxRef.current };
+      setBoxes(prev => [...prev, boxToAdd]);
+    }
+
+    setIsDrawing(false);
+    isDrawingRef.current = false;
+    setStartPoint(null);
+    setCurrentBox(null);
+    currentBoxRef.current = null;
+  };
+
+  const handleTouchCancel = (e: TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    console.log('[TouchCancel] Cancelling touch draw');
+
+    setIsDrawing(false);
+    isDrawingRef.current = false;
+    setStartPoint(null);
+    setCurrentBox(null);
+    currentBoxRef.current = null;
+  };
+
   // Function to delete a specific box
   const deleteBox = (boxId: string) => {
     setBoxes(prev => prev.filter(box => box.id !== boxId));
@@ -302,6 +385,14 @@ export default function MedicalSAMDemo() {
                     </span>
                   </Button>
                 </label>
+                <Button
+                  variant="outline"
+                  onClick={loadSampleImage}
+                  className="w-full h-9 border-purple-300 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950/30 transition-all"
+                >
+                  <ImageIcon className="mr-2 h-4 w-4 text-purple-600" />
+                  <span className="text-base">加载示例图像</span>
+                </Button>
                 {image && (
                   <Button
                     variant="ghost"
@@ -501,7 +592,11 @@ export default function MedicalSAMDemo() {
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseLeave}
-                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md cursor-crosshair"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchCancel}
+                    className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-md cursor-crosshair touch-none"
                     style={{
                       width: '100%',
                       paddingBottom: imageDimensions
