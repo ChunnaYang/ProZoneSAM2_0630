@@ -41,9 +41,6 @@ RUN pnpm install --prefer-offline
 # Copy source code
 COPY . .
 
-# Build Next.js
-RUN pnpm next build
-
 # Create startup script that downloads models at runtime and uses venv Python
 RUN echo '#!/bin/bash\n\
 # Activate Python virtual environment\n\
@@ -63,7 +60,7 @@ if [ -n "$SAM_MODEL_URL" ] && [ ! -f /app/Seg-code-try2region-noise/checkpoints/
 fi\n\
 echo "Starting Next.js with Python venv..."\n\
 echo "Python path: $PYTHON_PATH"\n\
-exec node_modules/.bin/next start -p ${PORT:-3000}' > /app/start.sh && chmod +x /app/start.sh
+exec node_modules/.bin/next dev -p ${PORT:-3000}' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose port (Railway uses PORT env variable, default to 3000)
 ENV PORT=3000
