@@ -458,8 +458,8 @@ export default function MedicalSAMDemo() {
           <div className="grid gap-5 lg:grid-cols-[360px_minmax(520px,1fr)_420px] lg:items-center">
             <div className="flex items-center justify-center lg:justify-start">
               <img
-                src="/山东大学logo.png"
-                alt="山东大学"
+                src="/sdu.png"
+                alt="sdu"
                 className="h-16 w-auto object-contain md:h-20 lg:h-24"
               />
             </div>
@@ -487,8 +487,8 @@ export default function MedicalSAMDemo() {
 
             <div className="flex items-center justify-center lg:justify-end">
               <img
-                src="/深圳河套学院.png"
-                alt="深圳河套学院"
+                src="/shenzhen.png"
+                alt="shenzhen"
                 className="h-32 w-auto object-contain md:h-36 lg:h-40"
               />
             </div>
