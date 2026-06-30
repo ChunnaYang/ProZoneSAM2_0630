@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
+
 interface Box {
   id: string;
   x: number;
@@ -126,6 +131,10 @@ async function runPythonSegmentation(
     const env = {
       ...process.env,
       USE_MEDICAL_SAM2: useMedical ? 'true' : 'false',
+      // Prevent Python from writing __pycache__ files under /app.
+      // In `next dev`, those file writes can trigger HMR/page refresh during segmentation.
+      PYTHONDONTWRITEBYTECODE: '1',
+      PYTHONPYCACHEPREFIX: '/tmp/pycache',
     };
 
     // Set timeout (5 minutes for model loading + inference on CPU)
@@ -147,7 +156,7 @@ async function runPythonSegmentation(
     const timeoutId = setTimeout(() => {
       console.log('[Segment] Python timeout, killing process');
       pythonProcess.kill();
-      resolve({ error: 'Python segmentation timeout (>120s)' });
+      resolve({ error: 'Python segmentation timeout (>300s)' });
     }, TIMEOUT_MS);
 
     // Write data to stdin
