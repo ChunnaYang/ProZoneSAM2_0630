@@ -421,20 +421,20 @@ export default function MedicalSAMDemo() {
             <Card className="border-blue-100 bg-white/90 p-5 shadow-sm dark:border-blue-900/60 dark:bg-slate-950/80">
               <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">系统简介</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                ProZoneSAM2 基于 SAM2 构建，使用边界框提示进行交互式前列腺区域分割。用户上传医学图像后，框选全腺体 WG 和中央腺体 CG，即可引导模型生成 CG 与 PZ 分割结果。
+                ProZoneSAM2 基于 SAM2 构建，使用边界框提示进行交互式前列腺区域分割。用户上传医学图像后，框选全腺体（Whole Gland, WG）和中央腺体（Central Gland, WG），根据解剖约束关系即可引导模型得到 CG 与 外周区（Peripheral Zone, PZ）分割结果。
               </p>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="rounded-xl bg-blue-50 px-2 py-2 text-blue-700 dark:bg-blue-950/30 dark:text-blue-200">
                   <div className="font-black">WG</div>
-                  <div className="mt-1 text-[11px]">全腺体</div>
+                  <div className="mt-1 text-[14px]">全腺体</div>
                 </div>
                 <div className="rounded-xl bg-orange-50 px-2 py-2 text-orange-700 dark:bg-orange-950/30 dark:text-orange-200">
                   <div className="font-black">CG</div>
-                  <div className="mt-1 text-[11px]">中央腺体</div>
+                  <div className="mt-1 text-[14px]">中央腺体</div>
                 </div>
                 <div className="rounded-xl bg-indigo-50 px-2 py-2 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-200">
                   <div className="font-black">PZ</div>
-                  <div className="mt-1 text-[11px]">外周带</div>
+                  <div className="mt-1 text-[14px]">外周区</div>
                 </div>
               </div>
             </Card>
