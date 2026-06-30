@@ -180,75 +180,21 @@ def load_nifti(nifti_path):
 
 
 def smooth_mask(mask_array: np.ndarray, min_size: int = 100, operation: str = 'both') -> np.ndarray:
-    """
-    Enhanced post-processing to remove small noise regions, fill holes, and smooth boundaries.
-
-    Args:
-        mask_array: Input mask array (H, W)
-        min_size: Minimum region size, regions smaller than this will be removed
-        operation: Morphological operation type ('opening', 'closing', 'both')
-
-    Returns:
-        Smoothed mask array
-    """
+    """Fast post-processing - simplified version."""
     if not SCIPY_AVAILABLE:
-        print("Warning: scipy not available. Skipping mask smoothing.", file=sys.stderr)
         return mask_array
 
-    # Ensure binary mask
     if mask_array.max() > 1:
         mask_array = (mask_array > 0).astype(np.uint8)
 
-    # Step 1: Fill small holes first (binary_fill_holes)
+    # Step 1: Fill holes
     mask_filled = ndimage.binary_fill_holes(mask_array).astype(np.uint8)
-    
-    # Step 2: Morphological closing to fill larger holes and smooth boundaries
-    # Use larger structure (5x5) and more iterations for better results
-    structure_closing = ndimage.generate_binary_structure(2, 2)
-    mask_closing = ndimage.binary_closing(
-        mask_filled, 
-        structure=structure_closing, 
-        iterations=2
-    ).astype(np.uint8)
 
-    # Step 3: Morphological opening to remove small noise
-    structure_opening = ndimage.generate_binary_structure(2, 1)
-    mask_opening = ndimage.binary_opening(
-        mask_closing, 
-        structure=structure_opening, 
-        iterations=1
-    ).astype(np.uint8)
-
-    # Step 4: Connected component analysis - keep only the largest region
-    labeled, num_features = ndimage.label(mask_opening)
-    if num_features > 0:
-        sizes = ndimage.sum(mask_opening, labeled, range(num_features + 1))
-        
-        # Find the largest region
-        max_size = 0
-        max_label = 0
-        for i in range(1, num_features + 1):
-            if sizes[i] > max_size:
-                max_size = sizes[i]
-                max_label = i
-        
-        # Keep the largest region if it's large enough
-        mask_smoothed = np.zeros_like(mask_opening)
-        if max_size >= min_size:
-            mask_smoothed[labeled == max_label] = 1
-        
-        # If largest region is small, keep all regions above min_size
-        if max_size < min_size:
-            for i in range(1, num_features + 1):
-                if sizes[i] >= min_size:
-                    mask_smoothed[labeled == i] = 1
-    else:
-        mask_smoothed = mask_opening
-
-    # Step 5: Final closing to smooth edges
+    # Step 2: Single closing operation (fast)
+    structure = ndimage.generate_binary_structure(2, 2)
     mask_final = ndimage.binary_closing(
-        mask_smoothed, 
-        structure=structure_closing, 
+        mask_filled,
+        structure=structure,
         iterations=1
     ).astype(np.uint8)
 
@@ -313,7 +259,7 @@ def resize_mask_to_original(mask: np.ndarray, orig_H: int, orig_W: int) -> np.nd
     """
     mask_image = Image.fromarray(mask.astype(np.uint8), mode='L')
     # Resize to original dimensions (not to 1024x1024)
-    mask_resized = mask_image.resize((orig_W, orig_H), Image.LANCZOS)
+    mask_resized = mask_image.resize((orig_W, orig_H), Image.BILINEAR)
     return np.array(mask_resized)
 
 
@@ -479,14 +425,14 @@ def segment_image(image, boxes, model):
         # Convert to [1, H, W] tensor
         image_tensor = torch.from_numpy(image_np).unsqueeze(0).float()
 
-        # Repeat to create 3-channel image -> [batch=1, channels=3, H, W]
-        # Then create video sequence by repeating the same frame -> [batch=1, channels=3, frames=3, H, W]
-        image_tensor = image_tensor.unsqueeze(1).repeat(1, 3, 1, 1)  # [1, 3, H, W]
-        # Create video: repeat same frame 3 times -> [1, 3, 3, H, W]
-        image_tensor = image_tensor.unsqueeze(2).repeat(1, 1, 3, 1, 1)  # [1, 3, 3, H, W]
-        # Move batch dimension to correct position for SAM2: [frames=3, batch=1, channels=3, H, W]
-        image_tensor = image_tensor.squeeze(0)  # [3, 3, H, W]
+        # Keep a single grayscale frame for faster interactive inference.
+        # Shape after squeeze: [frames=1, channels=1, H, W]
+        image_tensor = image_tensor.unsqueeze(1)  # [1, 1, H, W]
+        image_tensor = image_tensor.unsqueeze(2)  # [1, 1, 1, H, W]
+        image_tensor = image_tensor.squeeze(0)  # [1, 1, H, W]
         image_tensor = image_tensor.to(device)
+
+        prompt_frame_idx = 0
 
         print(f"[INFO] Input shape: {image_tensor.shape}", file=sys.stderr)
 
@@ -506,7 +452,7 @@ def segment_image(image, boxes, model):
                 (wg_box['x'] + wg_box['width']) * scale_factor_w,  # x2 (right)
                 (wg_box['y'] + wg_box['height']) * scale_factor_h  # y2 (bottom)
             ]).unsqueeze(0).to(device)
-            model.add_new_bbox(state, frame_idx=1, obj_id=3, bbox=wg_bbox, clear_old_points=False)
+            model.add_new_bbox(state, frame_idx=prompt_frame_idx, obj_id=3, bbox=wg_bbox, clear_old_points=False)
             print(f"[INFO] Added WG bbox (obj_id=3): {wg_bbox.tolist()}", file=sys.stderr)
 
         if len(cg_boxes) > 0:
@@ -517,7 +463,7 @@ def segment_image(image, boxes, model):
                 (cg_box['x'] + cg_box['width']) * scale_factor_w,  # x2 (right)
                 (cg_box['y'] + cg_box['height']) * scale_factor_h  # y2 (bottom)
             ]).unsqueeze(0).to(device)
-            model.add_new_bbox(state, frame_idx=1, obj_id=1, bbox=cg_bbox, clear_old_points=False)
+            model.add_new_bbox(state, frame_idx=prompt_frame_idx, obj_id=1, bbox=cg_bbox, clear_old_points=False)
             print(f"[INFO] Added CG bbox (obj_id=1): {cg_bbox.tolist()}", file=sys.stderr)
 
         # Propagate to get segmentation
@@ -527,12 +473,12 @@ def segment_image(image, boxes, model):
 
         print(f"[INFO] Segments extracted for frames: {list(segs.keys())}", file=sys.stderr)
 
-        # Extract masks for frame 1
-        if 1 in segs:
+        # Extract masks from the prompted frame
+        if prompt_frame_idx in segs:
             H, W = image_tensor.shape[-2:]
 
-            cg_logit = segs[1].get(1, torch.zeros((H, W), device=device))
-            wg_logit = segs[1].get(3, torch.zeros((H, W), device=device))
+            cg_logit = segs[prompt_frame_idx].get(1, torch.zeros((H, W), device=device))
+            wg_logit = segs[prompt_frame_idx].get(3, torch.zeros((H, W), device=device))
 
             # Convert to probabilities using sigmoid
             cg_prob = torch.sigmoid(cg_logit)
@@ -564,7 +510,6 @@ def segment_image(image, boxes, model):
             if len(wg_boxes) > 0:
                 wg_mask = (wg_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
                 wg_mask_smoothed = smooth_mask(wg_mask, min_size=200, operation='both')
-                wg_mask_smoothed = refine_mask_boundary(wg_mask_smoothed, sigma=1.5)
                 # Resize mask back to original image dimensions
                 wg_mask_final = resize_mask_to_original(wg_mask_smoothed, orig_H, orig_W)
                 wg_mask_image = create_colored_mask(wg_mask_final, color=(255, 0, 0), alpha=150)
@@ -574,7 +519,6 @@ def segment_image(image, boxes, model):
             if len(cg_boxes) > 0:
                 cg_mask = (cg_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
                 cg_mask_smoothed = smooth_mask(cg_mask, min_size=100, operation='both')
-                cg_mask_smoothed = refine_mask_boundary(cg_mask_smoothed, sigma=1.0)
                 # Resize mask back to original image dimensions
                 cg_mask_final = resize_mask_to_original(cg_mask_smoothed, orig_H, orig_W)
                 cg_mask_image = create_colored_mask(cg_mask_final, color=(0, 255, 0), alpha=150)
@@ -584,7 +528,6 @@ def segment_image(image, boxes, model):
             if len(wg_boxes) > 0 and len(cg_boxes) > 0:
                 pz_mask = (pz_prob_resized > 0.5).cpu().numpy().astype(np.uint8)
                 pz_mask_smoothed = smooth_mask(pz_mask, min_size=100, operation='both')
-                pz_mask_smoothed = refine_mask_boundary(pz_mask_smoothed, sigma=1.0)
                 # Resize mask back to original image dimensions
                 pz_mask_final = resize_mask_to_original(pz_mask_smoothed, orig_H, orig_W)
                 pz_mask_image = create_colored_mask(pz_mask_final, color=(0, 0, 255), alpha=150)
@@ -593,7 +536,7 @@ def segment_image(image, boxes, model):
 
             return masks_dict, True
         else:
-            print("[WARNING] No segmentation output found for frame 1, using mock", file=sys.stderr)
+            print(f"[WARNING] No segmentation output found for frame {prompt_frame_idx}, using mock", file=sys.stderr)
             return create_mock_masks(image, boxes), True
 
     except Exception as e:
