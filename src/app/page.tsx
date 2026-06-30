@@ -46,21 +46,40 @@ export default function MedicalSAMDemo() {
   const generateBoxId = () => `box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   // Load sample image for quick testing
-  const loadSampleImage = () => {
-    const sampleImage = new Image();
-    sampleImage.onload = () => {
-      setImageDimensions({ width: sampleImage.width, height: sampleImage.height });
-      setImage('/assets/test_image.png');
-      setBoxes([]); // Clear all boxes
-      setResult(null);
-      setStartPoint(null);
-      setCurrentBox(null);
-    };
-    sampleImage.onerror = () => {
-      console.error('Failed to load sample image');
+  const loadSampleImage = async () => {
+    try {
+      const response = await fetch('/assets/test_image.png');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sample image: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          setImageDimensions({ width: img.width, height: img.height });
+          setImage(dataUrl);
+          setBoxes([]); // Clear all boxes
+          setResult(null);
+          setStartPoint(null);
+          setCurrentBox(null);
+        };
+        img.onerror = () => {
+          console.error('Failed to decode sample image');
+          alert('Failed to load sample image');
+        };
+        img.src = dataUrl;
+      };
+      reader.onerror = () => {
+        console.error('FileReader failed to read sample image blob');
+        alert('Failed to load sample image');
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Failed to load sample image:', error);
       alert('Failed to load sample image');
-    };
-    sampleImage.src = '/assets/test_image.png';
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
