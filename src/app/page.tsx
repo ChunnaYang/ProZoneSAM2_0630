@@ -48,37 +48,65 @@ export default function MedicalSAMDemo() {
   // Load sample image for quick testing
   const loadSampleImage = async () => {
     try {
+      console.log('[loadSampleImage] Starting fetch of sample image...');
       const response = await fetch('/assets/test_image.png');
       if (!response.ok) {
         throw new Error(`Failed to fetch sample image: ${response.statusText}`);
       }
+
       const blob = await response.blob();
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
+      console.log('[loadSampleImage] Blob received. Size:', blob.size, 'bytes. Type:', blob.type);
+
+      if (blob.size === 0) {
+        throw new Error('Fetched blob is empty (0 bytes) — the asset may be missing or the path is wrong.');
+      }
+
+      // Wrap FileReader in a Promise so we await full Base64 conversion before proceeding
+      console.log('[loadSampleImage] Starting FileReader.readAsDataURL...');
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          console.log('[loadSampleImage] FileReader onload fired. dataUrl length:', result?.length ?? 0);
+          resolve(result);
+        };
+        reader.onerror = (event) => {
+          console.error('[loadSampleImage] FileReader error:', event);
+          reject(new Error('FileReader failed to convert blob to Base64'));
+        };
+        reader.readAsDataURL(blob);
+      });
+
+      console.log('[loadSampleImage] dataUrl starts with:', dataUrl.substring(0, 30));
+
+      if (!dataUrl.startsWith('data:image/')) {
+        throw new Error(`Unexpected dataUrl format — expected "data:image/..." but got: ${dataUrl.substring(0, 50)}`);
+      }
+
+      // Decode image dimensions before setting state
+      console.log('[loadSampleImage] Decoding image dimensions...');
+      await new Promise<void>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
+          console.log('[loadSampleImage] Image decoded. Dimensions:', img.width, 'x', img.height);
           setImageDimensions({ width: img.width, height: img.height });
           setImage(dataUrl);
-          setBoxes([]); // Clear all boxes
+          setBoxes([]);
           setResult(null);
           setStartPoint(null);
           setCurrentBox(null);
+          console.log('[loadSampleImage] State updated — image and dimensions set successfully.');
+          resolve();
         };
         img.onerror = () => {
-          console.error('Failed to decode sample image');
-          alert('Failed to load sample image');
+          console.error('[loadSampleImage] Failed to decode image from dataUrl');
+          reject(new Error('Failed to decode sample image from Base64 data URL'));
         };
         img.src = dataUrl;
-      };
-      reader.onerror = () => {
-        console.error('FileReader failed to read sample image blob');
-        alert('Failed to load sample image');
-      };
-      reader.readAsDataURL(blob);
+      });
     } catch (error) {
-      console.error('Failed to load sample image:', error);
-      alert('Failed to load sample image');
+      console.error('[loadSampleImage] Error:', error);
+      alert(`Failed to load sample image: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
